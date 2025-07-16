@@ -3,7 +3,7 @@ import serial
 import time
 
 # Initialize Groq client
-client = Groq(api_key="gsk_z2s211CyyGAzP3MyMwH2WGdyb3FYMC7abn7o6p0aNFNrTKv7     # HXy5")
+client = Groq(api_key="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")
 
 while True:
     # User input for AI
@@ -19,6 +19,7 @@ while True:
         stream=False
     )
 
+
     # Extract response
     response = completion.choices[0].message.content.strip()
 
@@ -26,14 +27,29 @@ while True:
     print("AI:", response)
 
     # Send to Arduino via Serial (adjust COM port as needed)
-    try:
-        ser = serial.Serial('COM7', 9600, timeout=1)  # Replace COM6 with your actual port
-        time.sleep(2)  # Wait for Arduino to reset
+    # try:
+    #     ser = serial.Serial('COM7', 9600, timeout=1)  # Replace COM6 with your actual port
+    #     time.sleep(3)  # Wait for Arduino to reset
 
-        # Send line by line if longer than 32 chars
-        for line in [response[i:i+32] for i in range(0, len(response), 32)]:
+    #     # Send line by line if longer than 32 chars
+    #     for line in [response[i:i+32] for i in range(0, len(response), 32)]:
+    #         ser.write((line + "\n").encode('utf-8'))
+    #         time.sleep(3)  # Give time to display
+
+    #     ser.close()
+    # except Exception as e:
+    #     print("Error sending to Arduino:", e)
+    
+    try:
+        ser = serial.Serial('COM7', 9600, timeout=1)  # Replace COM7 with your actual port
+        time.sleep(3)  # Wait for Arduino to reset
+
+        import textwrap
+        wrapped_lines = textwrap.wrap(response, width=32)
+
+        for line in wrapped_lines:
             ser.write((line + "\n").encode('utf-8'))
-            time.sleep(1)  # Give time to display
+            time.sleep(3)  # Give time to display
 
         ser.close()
     except Exception as e:
