@@ -1,0 +1,54 @@
+from flask import Flask, request, jsonify, send_file
+from groq import Groq
+from pathlib import Path
+import os
+
+app = Flask(__name__)
+
+# Set your Groq API key
+os.environ["GROQ_API_KEY"] = "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"
+client = Groq()
+
+# Store last message
+last_text = "Hello from ESP32!"
+
+@app.route('/chat', methods=['POST'])
+def get_response_chat():
+    global last_text
+    user_input = request.json.get("message")
+    last_text = user_input
+
+    completion = client.chat.completions.create(
+        model="meta-llama/llama-4-maverick-17b-128e-instruct",
+        messages=[{"role": "user", "content": user_input}],
+        temperature=1.3,
+        max_completion_tokens=512,
+        top_p=0.95,
+        stream=False
+    )
+
+    return completion.choices[0].message.content
+
+@app.route('/tts', methods=['POST'])
+def get_response_tts():
+    global last_text
+    speech_file_path = Path(__file__).parent / "speech.mp3"
+
+    response = client.audio.speech.create(
+        model="playai-tts",
+        voice="Quinn-PlayAI",
+        response_format="mp3",
+        input=last_text,
+    )
+    response.write_to_file(speech_file_path)
+    return jsonify({"status": "TTS generated", "file": "speech.mp3"})
+
+@app.route('/get_mp3', methods=['GET'])
+def get_mp3():
+    speech_file_path = Path(__file__).parent / "speech.mp3"
+    if speech_file_path.exists():
+        return send_file(speech_file_path, mimetype="audio/mpeg")
+    return "Not Found", 404
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
